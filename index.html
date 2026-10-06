@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ARCOS Ownership Module V1.0 — on the V0.5 Model</title>
+<style>
+  :root{
+    --bg:#0a0d0a; --panel:#10140f; --panel2:#161c15; --border:#283a28;
+    --text:#e8f2e9; --muted:#8aa08c; --accent:#4ade80; --accent2:#22c55e;
+    --metal:linear-gradient(135deg,#86efac,#16a34a 60%,#064e3b);
+    --bad:#f87171; --good:#4ade80; --warn:#facc15;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#f3f7f3; --panel:#ffffff; --panel2:#eef5ee;
+      --border:#d6e4d6; --text:#0e1a0f; --muted:#54664f;
+    }
+  }
+  :root[data-theme="dark"]{ --bg:#0a0d0a; }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+  .wrap{max-width:1000px;margin:0 auto;padding:20px 16px 60px;}
+  header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px;}
+  .brand{font-weight:800;font-size:1.25rem;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .brand small{display:block;font-size:.7rem;color:var(--muted);font-weight:600;-webkit-text-fill-color:var(--muted);}
+  .mas-badge{font-size:.72rem;background:var(--panel2);border:1px solid var(--accent2);color:var(--accent);padding:4px 10px;border-radius:12px;font-weight:700;}
+  .version-tag{display:inline-block;background:var(--warn);color:#241c00;font-weight:700;font-size:.68rem;padding:2px 9px;border-radius:12px;margin-left:6px;vertical-align:middle;}
+  .lineage{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:13px 15px;margin:12px 0 16px;font-size:.84rem;line-height:1.5;}
+  .lineage b,.lineage a{color:var(--accent);}
+  .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px;}
+  select,button,input{font:inherit;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px 9px;cursor:pointer;}
+  input{cursor:text;width:100%;}
+  input.num{width:64px;}
+  button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+  button.danger{background:var(--bad);color:#2b0a0a;border:none;font-weight:700;}
+  button.tilebtn{width:100%;margin-top:6px;background:var(--accent2);color:#06230f;border:none;font-weight:700;font-size:.78rem;padding:6px;}
+
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 18px;}
+  @media (max-width:760px){.tiles{grid-template-columns:1fr 1fr;}}
+  .tile{background:var(--panel);border:2px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;}
+  .tile.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
+  .tile .icon{font-size:1.5rem;display:block;color:var(--accent);}
+  .tile .name{font-weight:700;font-size:.85rem;margin:2px 0;}
+  .tile .desc{color:var(--muted);font-size:.68rem;line-height:1.3;margin-bottom:6px;}
+  .tile .inputs{display:flex;flex-direction:column;gap:4px;margin-top:4px;}
+  .tile .inputs label{font-size:.66rem;color:var(--muted);text-align:left;display:block;margin-bottom:1px;}
+  .tile .status{display:inline-block;margin-top:6px;font-size:.66rem;padding:2px 8px;border-radius:10px;background:var(--panel2);color:var(--muted);}
+  .tile.active .status{background:var(--accent2);color:#06230f;font-weight:700;}
+  .offchain{font-size:.6rem;color:var(--muted);font-style:italic;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:700px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .card h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 12px;}
+  .state-card{border:2px solid var(--accent2);} .state-card h2{color:var(--accent2);}
+  .derived-card{border:2px dashed var(--accent);background:var(--panel2);} .derived-card h2{color:var(--accent);}
+  .transition-card{border:2px solid var(--warn);} .transition-card h2{color:var(--warn);}
+  .flow-arrow{text-align:center;color:var(--muted);font-size:.76rem;margin:8px 0;}
+  .field{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:.9rem;gap:10px;}
+  .field:last-child{border-bottom:none;}
+  .field b{color:var(--accent);font-weight:700;text-align:right;}
+  .subhead{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:12px 0 6px;}
+  .subhead:first-child{margin-top:0;}
+  .authrow{display:flex;justify-content:space-between;font-size:.84rem;padding:4px 0;}
+  .authrow.root{color:var(--accent);font-weight:700;}
+  .cap-badge{display:inline-block;padding:5px 12px;border-radius:16px;background:var(--panel);border:1px solid var(--warn);color:var(--warn);font-weight:700;font-size:.78rem;margin:2px 0;}
+  .note{font-size:.79rem;color:var(--muted);margin-top:8px;line-height:1.4;}
+  fieldset{border:1px solid var(--border);border-radius:8px;margin:0 0 12px;padding:10px;}
+  legend{color:var(--muted);font-size:.76rem;padding:0 6px;}
+  .log{max-height:340px;overflow-y:auto;font-size:.83rem;}
+  .log-entry{padding:9px 10px;border-radius:7px;margin-bottom:6px;border-left:3px solid var(--border);}
+  .log-entry.ok{border-left-color:var(--good);background:rgba(74,222,128,.08);}
+  .log-entry.fail{border-left-color:var(--bad);background:rgba(248,113,113,.08);}
+  .log-entry .tag{color:var(--muted);font-size:.72rem;display:block;margin-bottom:2px;}
+  footer{text-align:center;color:var(--muted);font-size:.76rem;margin-top:24px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">ARCOS<small>Ownership Module</small></div>
+    <div><span class="mas-badge" id="masBadge">MAS · LOCAL ENGINE</span><span class="version-tag">V1.0</span></div>
+  </header>
+
+  <div class="lineage">
+    <b>Built on the V0.5 model.</b> <a href="https://arcos-prototype-v0-5.vercel.app/" target="_blank" rel="noopener">V0.5</a> let you set delegate, custodian, co-owner and renter manually. V1.0 keeps that — every field below is typed in by you, not hardcoded — and wires it to a real governed-state machine underneath instead of a wrapper around an external contract.
+  </div>
+
+  <div class="row">
+    <label><b>Acting as:</b></label>
+    <select id="actor">
+      <option>Alex</option><option>Partner</option><option>Gallery</option><option>Renter</option><option>Vault</option>
+      <option>Guardian1</option><option>Guardian2</option><option>Guardian3</option><option>NewWallet</option>
+    </select>
+  </div>
+
+  <div class="subhead" style="margin-top:0;">Capabilities — never stored, just reads over the Governed State box below</div>
+  <div class="tiles" id="tiles">
+    <div class="tile" id="tile-delegate">
+      <span class="icon">◎</span><div class="name">Delegation</div>
+      <div class="desc">Delegate rights without transferring ownership</div>
+      <div class="inputs">
+        <div><label>Delegate to</label><input id="in-delegate-to" value="Gallery"></div>
+        <div><label>Duration (days)</label><input class="num" id="in-delegate-days" value="30"></div>
+      </div>
+      <button class="tilebtn" onclick="tileClick('delegate')" id="btn-delegate">Delegate</button>
+      <span class="status" id="status-delegate"></span>
+    </div>
+
+    <div class="tile" id="tile-shared">
+      <span class="icon">⊕</span><div class="name">Shared Owner</div>
+      <div class="desc">Multi-holder ownership with governance</div>
+      <div class="inputs">
+        <div><label>Co-owner</label><input id="in-shared-who" value="Partner"></div>
+        <div><label>Their share %</label><input class="num" id="in-shared-pct" value="40"></div>
+      </div>
+      <button class="tilebtn" onclick="tileClick('shared')" id="btn-shared">Split Shares</button>
+      <span class="status" id="status-shared"></span>
+    </div>
+
+    <div class="tile" id="tile-custody">
+      <span class="icon">⊞</span><div class="name">Custody</div>
+      <div class="desc">Institutional custody arrangements</div>
+      <div class="inputs">
+        <div><label>Custodian</label><input id="in-custody-who" value="Vault"></div>
+      </div>
+      <button class="tilebtn" onclick="tileClick('custody')" id="btn-custody">Move to Custody</button>
+      <span class="status" id="status-custody"></span>
+    </div>
+
+    <div class="tile" id="tile-rental">
+      <span class="icon">◷</span><div class="name">Rental</div>
+      <div class="desc">Rent usage rights, time-limited</div>
+      <div class="inputs">
+        <div><label>Renter</label><input id="in-rental-who" value="Renter"></div>
+        <div><label>Duration (days)</label><input class="num" id="in-rental-days" value="45"></div>
+        <div><label>Price</label><input id="in-rental-price" value="0.5 ETH"></div>
+      </div>
+      <div class="offchain" id="settlementStatus" style="margin-top:4px;"></div>
+      <button class="tilebtn secondary" onclick="confirmPayment()" id="btn-pay" style="margin-top:4px;">Confirm Payment (separate Settlement state)</button>
+      <button class="tilebtn" onclick="tileClick('rental')" id="btn-rental">Rent Out</button>
+      <span class="status" id="status-rental"></span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card state-card">
+        <h2>Governed State — the only thing ever stored</h2>
+        <div id="stateFields"></div>
+      </div>
+      <div class="flow-arrow">↓ read live, every time ↓</div>
+      <div class="card derived-card">
+        <h2>Derived Reads</h2>
+        <div class="subhead">Authority Root — computed, not stored</div>
+        <div id="authComputation"></div>
+        <div class="subhead">Transitions available right now — derived from Authority Root + current state, for whoever is selected as "Acting as"</div>
+        <div class="note" style="margin-top:0;" id="availableTransitions"></div>
+      </div>
+    </div>
+
+    <div>
+    <div class="card">
+      <h2>Transitions — reversals</h2>
+      <p class="note" style="margin-top:0;">Ordinary Transitions, same Authority Root as the tiles above — just undoing what a tile did, moving state back toward Full/Sole Ownership.</p>
+      <div class="row">
+        <button class="secondary" onclick="act('revoke')">Revoke Use</button>
+        <button class="secondary" onclick="act('return')">Return from Custody</button>
+        <button class="secondary" onclick="act('mergeShares')">Merge Shares → Sole Owner</button>
+      </div>
+      <p class="note">Utility — not gated by anything, just the clock: <button class="secondary" onclick="act('advance')">Advance 46 days</button></p>
+    </div>
+
+    <div class="card transition-card">
+      <h2>Recovery / Failure</h2>
+      <p class="note" style="margin-top:0;"><b>Recovery</b> is gated by guardian quorum — a second, independent Authority, separate from Root, kept in reserve for when Root is lost. <b>Failure</b> isn't a button at all: it's what any Transition becomes when its Invariant doesn't pass — every red line in History below is a Failure, produced by the ordinary Transitions, not by anything in this box.</p>
+      <div class="row">
+        <button class="secondary" onclick="act('setGuardians')">Set Guardians (2-of-3)</button>
+      </div>
+      <div class="row"><button class="danger" onclick="act('recover')">Recover → NewWallet (act as 2 guardians)</button></div>
+      <button class="secondary" onclick="resetDemo()" style="margin-top:8px;">↺ Reset demo</button>
+    </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h2>History</h2>
+    <p class="note" style="margin-top:0;">One box, four things at once: every line names the <b>Transition</b> that ran and the <b>Invariant</b> result (pass or fail — failures are kept, not discarded). This whole log is <b>History</b>. And <b>Lifecycle</b>, below, is nothing but a read over it.</p>
+    <div class="row" style="margin:0 0 10px;">
+      <span class="note" style="margin:0;"><b>Digital Asset:</b> <span id="assetLifecycle"></span></span>
+    </div>
+    <div class="row" style="margin:0 0 10px;">
+      <span class="note" style="margin:0;"><b>Ownership Module:</b> <span id="ownLifecycle"></span></span>
+      <span class="cap-badge" id="lifeBadge"></span>
+    </div>
+    <div id="log" class="log"></div>
+  </div>
+  <footer>Same four tiles as V0.5, manually set as before. Underneath: a native state machine.</footer>
+</div>
+
+<script>
+const ASSET_NAME = 'Sunset #7';
+let state, day, signers, mintDay, settlement;
+function resetDemo(){
+  state = {shares:{Alex:100}, possession:'Alex', use:{holder:'Alex',scope:null,validUntil:null,revocable:true},
+    benefit:'Alex', version:1, guardians:[], threshold:0, recovered:false};
+  settlement = {funded:false, amount:null}; // separate module's state — Ownership never stores this
+  day = 0; mintDay = 0; signers = new Set();
+  document.getElementById('log').innerHTML = '';
+  record('Minted', null, null, `${ASSET_NAME} minted to Alex. Shares: Alex 100%. Version 1.`);
+  render();
+}
+function confirmPayment(){
+  const amount = document.getElementById('in-rental-price').value.trim() || '0.5 ETH';
+  settlement = {funded:true, amount};
+  record('Settlement: Payment Confirmed', null, null, `A SEPARATE module's state — not Ownership's. Amount: ${amount}. Rental's Invariant will query this through MAS, not store it itself.`);
+  render();
+}
+function majorityHolder(){ for(const [a,p] of Object.entries(state.shares)) if(p*2>100) return a; return null; }
+function isAuthority(who){ return majorityHolder()===who; }
+function useIsRoot(){ const root=majorityHolder(); if(state.use.holder!==root) return false;
+  if(state.use.validUntil!==null && state.use.validUntil<=day) return false; return true; }
+function capability(){
+  const root=majorityHolder();
+  const structure = Object.keys(state.shares).length>1 ? 'Shared Ownership' : 'Sole Ownership';
+  let useStatus;
+  if(!root) useStatus='Undefined';
+  else if(useIsRoot() && state.possession===root && state.benefit===root) useStatus='Full Ownership';
+  else if(state.possession===root && !useIsRoot() && state.use.revocable) useStatus='Delegation';
+  else if(state.possession===root && !useIsRoot() && !state.use.revocable) useStatus='Rental';
+  else if(state.possession!==root && state.use.holder===state.possession) useStatus='Custody';
+  else useStatus='Mixed';
+  return {structure, useStatus, root};
+}
+function lifecycleStage(cap){
+  if(state.recovered) return 'Recovered';
+  if(!cap.root) return 'Suspended (Authority undefined)';
+  if(state.version===1) return 'Genesis';
+  if(cap.structure==='Shared Ownership') return 'Fractured (shared authority)';
+  if(['Delegation','Rental','Custody'].includes(cap.useStatus)) return 'Encumbered';
+  return 'Active';
+}
+function expireIfDue(){
+  const root=majorityHolder();
+  if(state.use.holder!==root && state.use.validUntil!==null && state.use.validUntil<=day){
+    record('Use Expired', null, null, `Use auto-reverted from ${state.use.holder} to ${root} (day ${day}).`);
+    state.use={holder:root,scope:null,validUntil:null,revocable:true}; state.version++;
+  }
+}
+function record(title, idp, invp, msg){
+  const ok = (idp===null && invp===null) ? true : (idp && invp);
+  const el=document.getElementById('log'); const div=document.createElement('div');
+  div.className='log-entry '+(ok?'ok':'fail');
+  const idTxt = idp===null?'Identity: n/a':`Identity: ${idp?'PASS':'FAIL'}`;
+  const invTxt = invp===null?'Invariant: n/a':`Invariant: ${invp?'PASS':'FAIL'}`;
+  div.innerHTML = `<span class="tag">${idTxt} · ${invTxt} · ${ok?'EFFECT + HISTORY':'REVERTED — zero state change'} · day ${day} · v${state.version}</span><b>${title}:</b> ${msg}`;
+  el.prepend(div);
+}
+
+function tileClick(tile){
+  const cap = capability();
+  if(tile==='delegate'){
+    if(cap.useStatus==='Delegation') return act('revoke');
+    const to = document.getElementById('in-delegate-to').value.trim() || 'Gallery';
+    const days = parseInt(document.getElementById('in-delegate-days').value) || 30;
+    return act('delegate', {to, days});
+  }
+  if(tile==='shared'){
+    if(cap.structure==='Shared Ownership') return act('mergeShares');
+    const who = document.getElementById('in-shared-who').value.trim() || 'Partner';
+    const pct = Math.max(1, Math.min(99, parseInt(document.getElementById('in-shared-pct').value) || 40));
+    return act('splitShares', {who, pct});
+  }
+  if(tile==='custody'){
+    if(cap.useStatus==='Custody') return act('return');
+    const who = document.getElementById('in-custody-who').value.trim() || 'Vault';
+    return act('custody', {who});
+  }
+  if(tile==='rental'){
+    if(cap.useStatus==='Rental') return act('revoke');
+    const who = document.getElementById('in-rental-who').value.trim() || 'Renter';
+    const days = parseInt(document.getElementById('in-rental-days').value) || 45;
+    return act('rent', {who, days});
+  }
+}
+
+function act(kind, params){
+  const actor = document.getElementById('actor').value;
+  const root = majorityHolder();
+
+  if(kind==='advance'){ day+=46; record('Time', null, null, `Advanced to day ${day}.`); render(); return; }
+  if(kind==='setGuardians'){
+    if(!isAuthority(actor)){ record('setGuardians', false, null, `${actor} is not Authority Root (${root}).`); render(); return; }
+    state.guardians=['Guardian1','Guardian2','Guardian3']; state.threshold=2;
+    record('setGuardians', true, true, 'Guardians set: [Guardian1, Guardian2, Guardian3], threshold 2-of-3.'); render(); return;
+  }
+  if(kind==='recover'){
+    signers.add(actor);
+    const valid=[...signers].filter(s=>state.guardians.includes(s));
+    const quorum = valid.length>=state.threshold && state.threshold>0;
+    if(!quorum){ record('recoverOwnership', null, null, `Guardian quorum: ${valid.length}/${state.threshold||'?'} (${actor} added). Different authority than Authority Root. Act as another guardian.`); render(); return; }
+    state.shares={NewWallet:100}; state.possession='NewWallet';
+    state.use={holder:'NewWallet',scope:null,validUntil:null,revocable:true}; state.benefit='NewWallet';
+    state.version++; state.recovered=true;
+    record('recoverOwnership', true, true, `Guardian quorum reached (${valid.join(', ')}). Root → NewWallet. Active claims cleared.`);
+    signers.clear(); render(); return;
+  }
+
+  expireIfDue();
+  const capNow = capability();
+
+  if(kind==='splitShares'){
+    if(!isAuthority(actor)){ record('splitShares', false, null, `${actor} is not Authority Root (${root}).`); render(); return; }
+    const inv = capNow.structure==='Sole Ownership' && capNow.useStatus==='Full Ownership';
+    if(!inv){ record('splitShares', true, false, `Invariant failed: shares can only split from unencumbered Full Ownership. Current: ${capNow.structure}, ${capNow.useStatus}.`); render(); return; }
+    const remain = 100 - params.pct;
+    state.shares = {[root]:remain, [params.who]:params.pct}; state.version++;
+    record('splitShares', true, true, `Shares: ${root} ${remain}% / ${params.who} ${params.pct}%.` + (remain*2<=100 ? ' No strict majority — Authority Root now undefined.' : ` ${root} remains Root.`));
+    render(); return;
+  }
+  if(kind==='mergeShares'){
+    const id = isAuthority(actor);
+    if(!id){ record('mergeShares', false, null, root ? `${actor} is not Authority Root (${root}).` : `Authority is undefined — nobody can pass this check.`); render(); return; }
+    if(capNow.structure!=='Shared Ownership'){ record('mergeShares', true, false, `Nothing to merge — Shares are not currently split.`); render(); return; }
+    if(capNow.useStatus!=='Full Ownership'){ record('mergeShares', true, false, `Invariant failed: cannot merge while encumbered (${capNow.useStatus}).`); render(); return; }
+    state.shares={[root]:100}; state.version++;
+    record('mergeShares', true, true, `Shares merged back to ${root}: 100%.`); render(); return;
+  }
+
+  const id = isAuthority(actor);
+  if(!id){ record(kind, false, null, `${actor} is not Authority Root (${root||'undefined'}).`); render(); return; }
+
+  if(kind==='delegate'){
+    if(state.use.holder!==root){ record('delegateUse', true, false, `Use already committed to ${state.use.holder}.`); render(); return; }
+    state.use={holder:params.to, scope:'DISPLAY_ONLY', validUntil:day+params.days, revocable:true}; state.version++;
+    record('delegateUse', true, true, `Use → ${params.to}, until day ${day+params.days}. Revocable anytime.`);
+  } else if(kind==='rent'){
+    if(state.use.holder!==root){ record('rentUse', true, false, `Use already committed to ${state.use.holder}.`); render(); return; }
+    if(!settlement.funded){ record('rentUse', true, false, `Invariant failed: Ownership queried Settlement via MAS — payment not confirmed. Click "Confirm Payment" first.`); render(); return; }
+    state.use={holder:params.who, scope:'RENTAL_TERM', validUntil:day+params.days, revocable:false}; state.version++;
+    record('rentUse', true, true, `Settlement confirmed (${settlement.amount}, queried via MAS) → Use → ${params.who}, ${params.days} days. Non-revocable until day ${day+params.days}.`);
+    settlement = {funded:false, amount:null}; // consumed — must reconfirm for the next rental
+  } else if(kind==='revoke'){
+    if(state.use.holder===root){ record('revokeUse', true, false, 'Use is not committed elsewhere.'); render(); return; }
+    if(!state.use.revocable && day<state.use.validUntil){ record('revokeUse', true, false, `Invariant failed: non-revocable term ends day ${state.use.validUntil}, now day ${day}.`); render(); return; }
+    record('revokeUse', true, true, `Use reverted from ${state.use.holder} to ${root}.`);
+    state.use={holder:root,scope:null,validUntil:null,revocable:true}; state.version++;
+  } else if(kind==='custody'){
+    if(state.use.holder!==root){ record('moveToCustody', true, false, `Use already committed to ${state.use.holder}.`); render(); return; }
+    state.possession=params.who; state.use={holder:params.who,scope:null,validUntil:null,revocable:true}; state.version++;
+    record('moveToCustody', true, true, `Possession + Use both moved to ${params.who}.`);
+  } else if(kind==='return'){
+    if(state.possession===root){ record('returnFromCustody', true, false, 'Nothing is in Custody — Possession is already with Root.'); render(); return; }
+    state.possession=root; state.use={holder:root,scope:null,validUntil:null,revocable:true}; state.version++;
+    record('returnFromCustody', true, true, `Possession + Use returned to ${root}.`);
+  }
+  render();
+}
+
+function render(){
+  const cap = capability();
+  document.getElementById('stateFields').innerHTML = `
+    <div class="field"><span>Ownership Shares</span><b>${Object.entries(state.shares).map(([k,v])=>k+':'+v+'%').join(', ')}</b></div>
+    <div class="field"><span>Possession</span><b>${state.possession}</b></div>
+    <div class="field"><span>Use</span><b>${state.use.holder}${state.use.scope?' ('+state.use.scope+(state.use.validUntil!==null?', until day '+state.use.validUntil:'')+(state.use.revocable===false?', non-revocable':'')+')':''}</b></div>
+    <div class="field"><span>Benefit</span><b>${state.benefit}</b></div>
+    <div class="field"><span>Version</span><b>${state.version}</b></div>`;
+
+  document.getElementById('authComputation').innerHTML = Object.entries(state.shares).map(([holder,pct])=>
+    `<div class="authrow${pct*2>100?' root':''}">${holder} — ${pct}%${pct*2>100?' ← strict majority, this is Root':''}</div>`
+  ).join('') + (cap.root ? '' : `<div class="authrow" style="color:var(--bad);">No entry clears 50% — Authority Root is UNDEFINED</div>`);
+
+  const actorNow = document.getElementById('actor').value;
+  if(!cap.root){
+    document.getElementById('availableTransitions').textContent = `None — Authority Root is undefined, so no ordinary Transition can pass its Identity check right now, no matter who's acting.`;
+  } else if(actorNow !== cap.root){
+    document.getElementById('availableTransitions').textContent = `None — ${actorNow} is not Authority Root (${cap.root}). Every ordinary Transition fails Identity before Invariant is even checked.`;
+  } else {
+    const avail = [];
+    if(state.use.holder===cap.root) { avail.push('Delegate'); avail.push('Rent Out'); avail.push('Move to Custody'); }
+    else { avail.push(state.use.revocable===false && state.use.validUntil>day ? 'nothing on Use (non-revocable Rental, term not yet ended)' : 'Revoke Use'); }
+    if(state.possession!==cap.root) avail.push('Return from Custody');
+    if(capability().structure==='Sole Ownership' && capability().useStatus==='Full Ownership') avail.push('Split Shares');
+    if(capability().structure==='Shared Ownership' && capability().useStatus==='Full Ownership') avail.push('Merge Shares');
+    avail.push('Set Guardians');
+    document.getElementById('availableTransitions').textContent = `${actorNow} (Root) can currently: ${avail.join(', ')}.`;
+  }
+
+  document.getElementById('assetLifecycle').textContent = `${ASSET_NAME} — minted day ${mintDay}, exists, never burned.`;
+  document.getElementById('ownLifecycle').textContent = `Governance stage layered on top of the (unchanging) asset above.`;
+  document.getElementById('lifeBadge').textContent = lifecycleStage(cap);
+
+  const map = {delegate:'Delegation', shared:'Shared Ownership', custody:'Custody', rental:'Rental'};
+  for(const [id,label] of Object.entries(map)){
+    const tile = document.getElementById('tile-'+id);
+    const statusEl = document.getElementById('status-'+id);
+    const btn = document.getElementById('btn-'+id);
+    const isActive = (id==='shared') ? cap.structure==='Shared Ownership' : cap.useStatus===label;
+    tile.classList.toggle('active', isActive);
+    statusEl.textContent = isActive ? 'ACTIVE' : 'inactive';
+    if(id!=='shared') btn.textContent = isActive ? (id==='custody'?'Return':'Revoke') : btn.textContent.replace('Revoke','').trim() || {delegate:'Delegate',custody:'Move to Custody',rental:'Rent Out'}[id];
+  }
+  document.getElementById('masBadge').textContent = cap.root ? 'MAS · LOCAL ENGINE' : 'MAS · AUTHORITY UNDEFINED';
+  document.getElementById('settlementStatus').textContent = settlement.funded
+    ? `Settlement: FUNDED (${settlement.amount}) — not stored in Ownership, queried via MAS`
+    : `Settlement: unfunded — Ownership's Invariant will query this before renting`;
+}
+resetDemo();
+</script>
+</body>
+</html>
