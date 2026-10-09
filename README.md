@@ -1,7 +1,7 @@
 # ARCOS — Module & Ownership Module
 
 - [Read the write-up](./Ownership-Module.md)
-- [Open the live demo]( https://payalhanda348-bot.github.io/Ownership-Module/)
+- [Open the live demo V1.0]( https://payalhanda348-bot.github.io/Ownership-Module/)
 - [ARCOS V0.5 Prototype demo]( https://arcos-prototype-v0-5.vercel.app/)
 - [ARCOS]( https://www.arcos.ac/)
 
